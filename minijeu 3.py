@@ -309,7 +309,7 @@ print("\nProgramme d'achat optimal:")
 for t, action in enumerate(actions):
     print(f"Jour {t+1}: Achat de {action[0]} actions, Sonner la cloche: {action[1]}")
 
-
+# prochaines étapes.
 #- lire des docs sur pytorch et réseau que je vais envoyer
 #- simulation pour évaluer une stratégie donnée
 #- rappelle : stratégie = fonction : {états] -> {actions]
