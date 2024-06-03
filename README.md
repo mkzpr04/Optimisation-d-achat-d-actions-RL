@@ -10,7 +10,6 @@ somme (v_n) = 100
 chaque soir à partir du 20e jour, on peut sonner une cloche uniquement lorsque 100 actions ont été achetés, et le jeu s'arrête alors.
 Nous souhaitons maximiser ceci :100*A_n - (ce que l'on a dépensé)
 
-
 Initialisation :
 
 LinearPolicy initialise une politique avec des poids aléatoires.
@@ -26,3 +25,5 @@ L'épisode s'arrête si la cloche est sonnée ou si le nombre maximal d'actions 
 
 Pour chaque épisode, les états, actions et récompenses sont enregistrés.
 La politique est mise à jour en utilisant le gradient de politique basé sur les retours.
+
+# Achat de fraction d'action
