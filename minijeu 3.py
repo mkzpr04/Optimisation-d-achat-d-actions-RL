@@ -6,7 +6,7 @@ nb_jours = 60
 objectif_stock = 100
 S0 = 100
 np.random.seed(1) #activer la reproductibilité
-
+#diadpa
 X_n=np.random.normal(0, 1, nb_jours)
 X_n=np.insert(X_n, 0, 0)
 S_n=np.zeros(nb_jours+1)
