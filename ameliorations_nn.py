@@ -1,3 +1,5 @@
+
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -133,26 +135,45 @@ def train(num_episodes):
         loss.backward()
         optimizer.step()
 
+def evaluate_policy(model, num_episodes):
+    total_spent_list = []
+    total_stocks_list = []
+    A_n_list = []
+    reward_list = []
+    final_day_list = []
+    
+    for _ in range(num_episodes):
+        _, actions, _, prices = simulate_episode(model)
+        final_day = len(actions)
+        total_spent = sum([a[0] * prices[t] for t, a in enumerate(actions)])
+        total_stocks = sum([a[0] for a in actions])
+        A_n = np.mean(prices[:final_day])
+        reward_value = reward(total_spent, A_n)
+
+        total_spent_list.append(total_spent)
+        total_stocks_list.append(total_stocks)
+        A_n_list.append(A_n)
+        reward_list.append(reward_value)
+        final_day_list.append(final_day)
+    
+    avg_total_spent = np.mean(total_spent_list)
+    avg_total_stocks = np.mean(total_stocks_list)
+    avg_A_n = np.mean(A_n_list)
+    avg_reward_value = np.mean(reward_list)
+    avg_final_day = np.mean(final_day_list)
+    
+    return avg_total_spent, avg_total_stocks, avg_A_n, avg_reward_value, avg_final_day
+
 # initialisation and training of the model
 model = StockNetwork()
 train(10000)
 
-# Évaluation de la politique sur 1 épisode
-states, actions, rewards, prices = simulate_episode(model)
-final_day = len(actions)
-total_spent = sum([a[0] * prices[t] for t, a in enumerate(actions)])
-total_stocks = sum([a[0] for a in actions])
-A_n = np.mean(prices[:final_day])
-reward_value = reward(total_spent, A_n)
+num_episodes = 200
+avg_total_spent, avg_total_stocks, avg_A_n, avg_reward_value, avg_final_day = evaluate_policy(model, num_episodes)
 
-print(f"Gain moyen d'episode: {reward_value}")
-print(f"Cout total: {total_spent}")
-print(f"Jour de fin: {final_day}")
-print(f"Prix action: {prices[:final_day+1]}")
-print(f"Prix moyen: {A_n}")
-print(f"Nombre d'action acheté: {[a[0] for a in actions[:final_day+1]]}")
-print(f"Cloche sonnée: {[a[1] for a in actions[:final_day+1]]}")
-print(f"Actions cumulées: {np.cumsum([a[0] for a in actions[:final_day+1]])}")
-print("\nProgramme d'achat optimal:")
-for t, action in enumerate(actions):
-    print(f"Jour {t+1}: Achat de {action[0]} actions, Sonner la cloche: {action[1]}")
+print(f"Résultats moyens sur {num_episodes} épisodes:")
+print(f"Gain moyen: {avg_reward_value}")
+print(f"Cout total moyen: {avg_total_spent}")
+print(f"Jour de fin moyen: {avg_final_day}")
+print(f"Prix moyen: {avg_A_n}")
+print(f"Nombre d'actions acheté en moyenne: {avg_total_stocks}")

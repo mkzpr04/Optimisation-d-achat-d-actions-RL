@@ -1,12 +1,12 @@
 # Optimisation-d-achat-de-100-actions-sur-60-jours
 
 S0 = 100 le prix initial de l'action 
-S_(n+1) = S_n + sigma*X_(n+1) 
-(X_n) sont des loi normales N(0,1) i.i.d.
+S_(n+1) = S_n + sigma*X_(n+1) les prix des jours suivants
+où (X_n) sont des loi normales N(0,1) i.i.d.
 A_n = 1/n*sum(S_k) k=1..n  (A_0 = S_0) est la moyenne du prix 
 but : nous voulons acheter 100 stocks sur 60 jours.
 v_n * S_(n+1) désigne le prix qu'on a dépensé pour acheter v_n action
-somme (v_n) = 100 
+sachant que à la fin on doit avoir somme (v_n) = 100 
 chaque soir à partir du 20e jour, on peut sonner une cloche uniquement lorsque 100 actions ont été achetés, et le jeu s'arrête alors.
 Nous souhaitons maximiser ceci :100*A_n - (ce que l'on a dépensé)
 
@@ -31,5 +31,6 @@ La politique est mise à jour en utilisant le gradient de politique basé sur le
 
 # Modification
 
-retourner la moyenne des episodes et non plus le meilleur épisode
+retourner la moyenne des episodes et non plus le meilleur, ou le dernier épisode ce qui est plus robuste pour évaluer la performance de la politique
 Normalisation changée (min max)
+distribution gaussienne avec torch.distributions.Normal
