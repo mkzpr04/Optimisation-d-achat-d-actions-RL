@@ -1,3 +1,5 @@
+
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -6,7 +8,7 @@ from tqdm import tqdm
 
 # state variable definition and parameter initialization
 S0 = 100
-sigma = 2.0
+sigma = 5.0
 days = 60 
 goal = 100
 
@@ -29,15 +31,17 @@ class StockNetwork(nn.Module):
         self.act2 = nn.ReLU()
         self.hidden3 = nn.Linear(128, 128)
         self.act3 = nn.ReLU()
-        self.output = nn.Linear(128, 2)  # Outputs: number of stocks to buy, ring the bell or not
-        self.act_output = nn.Sigmoid()
+        self.mean_output = nn.Linear(128, 2) # prediction of the mean of the distribution for the number of stocks to buy and the bell
+        self.std_output = nn.Linear(128, 2) # prediction of the standard deviation of the distribution for the number of stocks to buy and the bell
+        
 
     def forward(self, x):
         x = self.act1(self.hidden1(x))
         x = self.act2(self.hidden2(x))
         x = self.act3(self.hidden3(x))
-        x = self.act_output(self.output(x))
-        return x
+        mean = self.mean_output(x)
+        std = torch.exp(self.std_output(x))
+        return mean, std
 
 # state normalization
 def normalize_state(state):
@@ -75,7 +79,9 @@ def simulate_episode(model):
         
         # forward pass
         with torch.no_grad(): # to avoid calculating gradients during inference (forward pass) 
-            action = model(state_tensor).numpy()
+            mean, std = model(state_tensor)
+            dist = torch.distributions.Normal(mean, std)
+            action = dist.sample().numpy()
 
         # action
         v_n = action[0] * (goal - total_stocks) if not done else 0 # if the episode is done, reset the number of stocks to 0
@@ -108,7 +114,7 @@ def compute_returns(rewards, gamma=0.99):
         returns.insert(0, R)
     return returns
 
-def train(num_episodes):
+def train(model, num_episodes):
     optimizer = optim.Adam(model.parameters(), lr=0.01)
     gamma = 0.99
 
@@ -121,38 +127,67 @@ def train(num_episodes):
 
         for state, action, G in zip(states, actions, returns):
             state_tensor = torch.tensor(state, dtype=torch.float32)
-            action_tensor = torch.tensor(action, dtype=torch.float32)
-            G_tensor = torch.tensor(G, dtype=torch.float32)
+            mean, std = model(state_tensor)
+            dist = torch.distributions.Normal(mean, std)
+            log_prob = dist.log_prob(torch.tensor(action, dtype=torch.float32)).sum()
+            loss -= log_prob * G
             
-            probs = model(state_tensor)
-            dist = torch.distributions.Bernoulli(probs)
-            log_prob = dist.log_prob(action_tensor).sum()
     
-            loss -= log_prob * G_tensor
-
         loss.backward()
         optimizer.step()
 
+def evaluate_policy(model, num_episodes):
+    total_spent_list = []
+    total_stocks_list = []
+    A_n_list = []
+    reward_list = []
+    final_day_list = []
+    
+    for _ in range(num_episodes):
+        _, actions, _, prices = simulate_episode(model)
+        final_day = len(actions)
+        total_spent = sum([a[0] * prices[t] for t, a in enumerate(actions)])
+        total_stocks = sum([a[0] for a in actions])
+        A_n = np.mean(prices[:final_day])
+        reward_value = reward(total_spent, A_n)
+
+        total_spent_list.append(total_spent)
+        total_stocks_list.append(total_stocks)
+        A_n_list.append(A_n)
+        reward_list.append(reward_value)
+        final_day_list.append(final_day)
+    
+    avg_total_spent = np.mean(total_spent_list)
+    avg_total_stocks = np.mean(total_stocks_list)
+    avg_A_n = np.mean(A_n_list)
+    avg_reward_value = np.mean(reward_list)
+    avg_final_day = np.mean(final_day_list)
+    
+    return avg_total_spent, avg_total_stocks, avg_A_n, avg_reward_value, avg_final_day
+
 # initialisation and training of the model
 model = StockNetwork()
-train(10000)
+train(model, 1000)
 
-# Évaluation de la politique sur 1 épisode
-states, actions, rewards, prices = simulate_episode(model)
-final_day = len(actions)
-total_spent = sum([a[0] * prices[t] for t, a in enumerate(actions)])
-total_stocks = sum([a[0] for a in actions])
-A_n = np.mean(prices[:final_day])
-reward_value = reward(total_spent, A_n)
+num_episodes = 100
+avg_total_spent, avg_total_stocks, avg_A_n, avg_reward_value, avg_final_day = evaluate_policy(model, num_episodes)
 
-print(f"Gain moyen d'episode: {reward_value}")
-print(f"Cout total: {total_spent}")
-print(f"Jour de fin: {final_day}")
-print(f"Prix action: {prices[:final_day+1]}")
-print(f"Prix moyen: {A_n}")
-print(f"Nombre d'action acheté: {[a[0] for a in actions[:final_day+1]]}")
-print(f"Cloche sonnée: {[a[1] for a in actions[:final_day+1]]}")
-print(f"Actions cumulées: {np.cumsum([a[0] for a in actions[:final_day+1]])}")
-print("\nProgramme d'achat optimal:")
-for t, action in enumerate(actions):
-    print(f"Jour {t+1}: Achat de {action[0]} actions, Sonner la cloche: {action[1]}")
+print(f"Résultats moyens sur {num_episodes} épisodes:")
+print(f"Gain moyen: {avg_reward_value}")
+print(f"Cout total moyen: {avg_total_spent}")
+print(f"Jour de fin moyen: {avg_final_day}")
+print(f"Prix moyen: {avg_A_n}")
+print(f"Nombre d'actions acheté en moyenne: {avg_total_stocks}")
+
+
+# pour sauvegarder le modèle
+torch.save(model.state_dict(), 'stock_model.pth')
+
+
+# pour charger le modèle
+model = StockNetwork()
+model.load_state_dict(torch.load('stock_model.pth'))
+model.eval()
+
+train(model, 1000)
+
