@@ -1,46 +1,3 @@
-#Mini jeu 3
-#%%Stratégie d'achat fixe d'action : 1 action pendant 20 jours et 2 action jusqu'au 60ème jour
-import numpy as np
-sigma = 1.2
-nb_jours = 60
-objectif_stock = 100
-S0 = 100
-np.random.seed(1) #activer la reproductibilité
-#diadpa
-X_n=np.random.normal(0, 1, nb_jours)
-X_n=np.insert(X_n, 0, 0)
-S_n=np.zeros(nb_jours+1)
-S_n[0]=S0
-for i in range(1, nb_jours + 1):
-    S_n[i]=S_n[i-1]+sigma*X_n[i]
-
-vn=[1]*20+[2]*40
-depense_totale=0
-stocks_achetees=0
-A_n=S0
-
-for jour in range(nb_jours):
-    if stocks_achetees >= objectif_stock:
-        break
-    stocks_achetees+=vn[jour]
-    depense_totale+=vn[jour]*S_n[jour+1]
-    A_n=((A_n*jour) + S_n[jour + 1])/(jour+1)
-
-gain = 100 * A_n - depense_totale
-
-print(f"Total dépensé : {depense_totale:.2f}")
-print(f"Prix moyen cumulé des actions : {A_n:.2f}")
-print(f"Gain net : {gain:.2f}")
-print(f"nombre de stock acheté:{stocks_achetees}")
-
-#Total dépensé : 9704.93
-#Prix moyen cumulé des actions : 97.32
-#Gain net : 26.69
-#nombre de stock acheté:100
-# En somme avec plusieurs essai, on est souvent centré autour de 0 avec parfois des gains négatif ce qui n'assure pas un gain positif.
-
-#%% gradient policy method
-
 #variable d'état : temps t [current_day] / prix d'état du sous jacent S_n / moyenne courant du spot A_n / , nb d'action déjà achetée somme V_n et ce que l'on a dépensé. [somme (v_k)*S_(k+1), k=1...n]
 #action : nbr d'action a acheté, sonne la cloche ou pas?
 
@@ -82,10 +39,10 @@ class LinearPolicy:
         return np.random.choice(len(action_prob), p=action_prob)
 
 def simulate_episode(policy, sigma, max_days=60, max_stocks=100, jour_min_pour_sonner_cloche=20):
-    S = np.zeros(max_days) # prix action chaque t (jour)
-    A = np.zeros(max_days) # moyenne des prix
-    V = np.zeros(max_days) # nombre d'actions acheté chaque jour
-    C = np.zeros(max_days)  # cloche sonnée (1) non sonnée (0)
+    S = np.zeros(max_days+1) # prix action chaque t (jour)
+    A = np.zeros(max_days+1) # moyenne des prix
+    V = np.zeros(max_days+1) # nombre d'actions acheté chaque jour
+    C = np.zeros(max_days+1)  # cloche sonnée (1) non sonnée (0)
     total_stocks = 0 # nombre total d'action acheté
     total_cost = 0 # cout total
     cloche = False # cloche sonnée ou pas
@@ -95,9 +52,9 @@ def simulate_episode(policy, sigma, max_days=60, max_stocks=100, jour_min_pour_s
     S[0] = 100
     A[0] = S[0]
 
-    for t in range(1, max_days):
+    for t in range(1, max_days+1):
         S[t] = S[t-1] + sigma * np.random.randn()
-        A[t] = np.mean(S[:t+1])
+        A[t] = np.mean(S[1:t+1])
 
         state = np.array([t, S[t], A[t], total_stocks, total_cost])
         state = (state - np.mean(state)) / 100 # Normalisation ATTENTION np.std pas de sens
@@ -178,16 +135,21 @@ import numpy as np
 
 class LinearPolicy:
     def __init__(self, state_dim, action_dim):  # stade_dim : nb de caracteristique décrivant l'état, action_dim : nombre maximum d'actions possibles (y compris sonner la cloche à partir du 20e jour)
-        self.poids = np.random.randn(state_dim, action_dim) * 0.01 # petits poids pour éviter des grands gradient en début d'entrainement
+        self.poids = np.random.randn(state_dim, action_dim) * 0.1 # petits poids pour éviter des grands gradient en début d'entrainement
 
     def action_prob(self, state):
         score = np.dot(state, self.poids) # pour chaque action, le score est calculé comme une combinaison linéaire des caractéristiques de l'état et des poids associés à cette action
         exp_score = np.exp(score - np.max(score)) # on soustrait le max pour éviter d'avoir des trop grand nombres à gérer (c'est équivalent)
-        return exp_score / np.sum(exp_score) # softmax
+        action_probs= exp_score / np.sum(exp_score) # softmax
+        return action_probs
 
-    def get_action(self, state): # choisir l'action selon les probabilités calculées
+
+    def get_action(self, state, epsilon=0.1):  # choisir l'action selon les probabilités calculées
         action_prob = self.action_prob(state)
-        return np.random.choice(len(action_prob), p=action_prob)
+        if np.random.rand() < epsilon:
+            return np.random.choice(len(action_prob))  # choisir une action aléatoire avec une probabilité epsilon
+        else:
+            return np.random.choice(len(action_prob), p=action_prob)
 
     def update_policy(self, states, actions, rewards, learning_rate=0.01): # states : np array , actions prise : list,  récompense correspondant à l'action prise dans l'état précédent (S0 A0 R1..), learning_rate de 1% pour ajuster les poids à chaque update.
         G = 0
@@ -210,10 +172,10 @@ class LinearPolicy:
         self.poids += learning_rate * policy_gradient
 
 def simulate_episode(policy, sigma, max_days=60, max_stocks=100, jour_min_pour_sonner_cloche=20):
-    S = np.zeros(max_days) # prix action chaque t (jour)
-    A = np.zeros(max_days) # moyenne des prix
-    V = np.zeros(max_days) # nombre d'actions acheté chaque jour
-    C = np.zeros(max_days)  # cloche sonnée (1) non sonnée (0)
+    S = np.zeros(max_days+1) # prix action chaque t (jour)
+    A = np.zeros(max_days+1) # moyenne des prix
+    V = np.zeros(max_days+1) # nombre d'actions acheté chaque jour
+    C = np.zeros(max_days+1)  # cloche sonnée (1) non sonnée (0)
     total_stocks = 0 # nombre total d'action acheté
     total_cost = 0 # cout total
     cloche = False # cloche sonnée ou pas
@@ -225,14 +187,15 @@ def simulate_episode(policy, sigma, max_days=60, max_stocks=100, jour_min_pour_s
 
     for t in range(1, max_days):
         S[t] = S[t-1] + sigma * np.random.randn()
-        A[t] = np.mean(S[:t+1])
+        A[t] = np.mean(S[1:t+1])
 
         state = np.array([t, S[t], A[t], total_stocks, total_cost])
-        state = (state - np.mean(state)) / (np.std(state) + 1e-5) # Normalisation
+        state = (state - np.mean(state)) / 100 # Normalisation
+    
 
         action = policy.get_action(state)
-        num_stocks = action if action < 10 else 0
-        sonner_cloche = 1 if action >= 10 and total_stocks >= max_stocks and t >= jour_min_pour_sonner_cloche else 0
+        num_stocks = action if action < 100 else 0
+        sonner_cloche = 1 if action >= 100 and total_stocks >= max_stocks and t >= jour_min_pour_sonner_cloche else 0
 
         if num_stocks + total_stocks > max_stocks: # pour ne pas dépasser 100 stocks
             num_stocks = max_stocks - total_stocks
@@ -257,7 +220,7 @@ def simulate_episode(policy, sigma, max_days=60, max_stocks=100, jour_min_pour_s
     reward = 100 * A[final_day] - total_cost
     return S, A, V, C, total_cost, reward, final_day, actions
 
-def evaluate_policy(policy, sigma, num_episodes=100, learning_rate=0.01):
+def evaluate_policy(policy, sigma, num_episodes=1000, learning_rate=0.1):
     best_episode = None
     best_reward = -np.inf
 
@@ -273,7 +236,8 @@ def evaluate_policy(policy, sigma, num_episodes=100, learning_rate=0.01):
             if t >= len(episode_actions):
                 break
             state = np.array([t, S[t], A[t], np.sum(V[:t+1]), total_cost])
-            state = (state - np.mean(state)) / (np.std(state) + 1e-5)
+            state = (state - np.mean(state)) / 100
+
             states.append(state)
             actions.append(episode_actions[t][0])
             rewards.append(reward)
@@ -284,12 +248,11 @@ def evaluate_policy(policy, sigma, num_episodes=100, learning_rate=0.01):
             best_reward = reward
             best_episode = (S, A, V, R, total_cost, reward, final_day, episode_actions)
 
-    return best_episode #prendre la moyenne de l'épisode (/ VaR)
-
+    return best_episode
 
 sigma = 1.0
 state_dim = 5
-action_dim = 11
+action_dim = 101
 
 policy = LinearPolicy(state_dim, action_dim)
 

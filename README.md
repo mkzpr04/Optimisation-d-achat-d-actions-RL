@@ -27,3 +27,9 @@ Pour chaque épisode, les états, actions et récompenses sont enregistrés.
 La politique est mise à jour en utilisant le gradient de politique basé sur les retours.
 
 # Achat de fraction d'action
+
+
+# Modification
+
+retourner la moyenne des episodes et non plus le meilleur épisode
+Normalisation changée (min max)
