@@ -1,6 +1,6 @@
 # Optimisation-d-achat-de-100-actions-sur-60-jours
 
-S0 = 100 le prix initial de l'action
+S0 = 100 le prix initial de l'action 
 S_(n+1) = S_n + sigma*X_(n+1) 
 (X_n) sont des loi normales N(0,1) i.i.d.
 A_n = 1/n*sum(S_k) k=1..n  (A_0 = S_0) est la moyenne du prix 
