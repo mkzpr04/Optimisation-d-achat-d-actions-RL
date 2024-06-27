@@ -34,3 +34,6 @@ La politique est mise à jour en utilisant le gradient de politique basé sur le
 retourner la moyenne des episodes et non plus le meilleur, ou le dernier épisode ce qui est plus robuste pour évaluer la performance de la politique
 Normalisation changée (min max)
 distribution gaussienne avec torch.distributions.Normal
+
+
+problème ca achete tjr 100 actions dès le début, je comprend pas pq.

@@ -23,13 +23,13 @@ def reward(total_spent, A_n):
 class StockNetwork(nn.Module):
     def __init__(self):
         super().__init__()
-        self.hidden1 = nn.Linear(5, 128)
+        self.hidden1 = nn.Linear(5, 800)
         self.act1 = nn.ReLU()
-        self.hidden2 = nn.Linear(128, 128)
+        self.hidden2 = nn.Linear(800, 800)
         self.act2 = nn.ReLU()
-        self.hidden3 = nn.Linear(128, 128)
+        self.hidden3 = nn.Linear(800, 800)
         self.act3 = nn.ReLU()
-        self.output = nn.Linear(128, 2)  # Outputs: number of stocks to buy, ring the bell or not
+        self.output = nn.Linear(800, 2)  # Outputs: number of stocks to buy, ring the bell or not
         self.act_output = nn.Sigmoid()
 
     def forward(self, x):
@@ -121,7 +121,7 @@ def train(num_episodes):
 
         for state, action, G in zip(states, actions, returns):
             state_tensor = torch.tensor(state, dtype=torch.float32)
-            action_tensor = torch.tensor([int(action[0] >= 0.5), int(action[1] >= 0.5)], dtype=torch.float32)
+            action_tensor = torch.tensor([action[0] >= 0.5, action[1] >= 0.5], dtype=torch.float32)
             G_tensor = torch.tensor(G, dtype=torch.float32)
             
             probs = model(state_tensor)
@@ -135,7 +135,7 @@ def train(num_episodes):
 
 # initialisation and training of the model
 model = StockNetwork()
-train(10000)
+train(500)
 
 # Évaluation de la politique sur 1 épisode
 states, actions, rewards, prices = simulate_episode(model)

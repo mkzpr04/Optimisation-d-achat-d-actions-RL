@@ -1,5 +1,4 @@
 
-
 import numpy as np
 import torch
 import torch.nn as nn
@@ -8,7 +7,7 @@ from tqdm import tqdm
 
 # state variable definition and parameter initialization
 S0 = 100
-sigma = 5.0
+sigma = 2.0
 days = 60 
 goal = 100
 
@@ -41,6 +40,7 @@ class StockNetwork(nn.Module):
         x = self.act3(self.hidden3(x))
         mean = self.mean_output(x)
         std = torch.exp(self.std_output(x))
+
         return mean, std
 
 # state normalization
@@ -142,6 +142,7 @@ def evaluate_policy(model, num_episodes):
     A_n_list = []
     reward_list = []
     final_day_list = []
+    actions_list = []
     
     for _ in range(num_episodes):
         _, actions, _, prices = simulate_episode(model)
@@ -156,6 +157,7 @@ def evaluate_policy(model, num_episodes):
         A_n_list.append(A_n)
         reward_list.append(reward_value)
         final_day_list.append(final_day)
+        actions_list.append(actions)
     
     avg_total_spent = np.mean(total_spent_list)
     avg_total_stocks = np.mean(total_stocks_list)
@@ -163,14 +165,22 @@ def evaluate_policy(model, num_episodes):
     avg_reward_value = np.mean(reward_list)
     avg_final_day = np.mean(final_day_list)
     
-    return avg_total_spent, avg_total_stocks, avg_A_n, avg_reward_value, avg_final_day
+    return avg_total_spent, avg_total_stocks, avg_A_n, avg_reward_value, avg_final_day, actions_list
+
+
+
+def display_optimal_plan(actions, prices):
+    print("\nProgramme d'achat optimal:")
+    for t, action in enumerate(actions):
+        print(f"Jour {t+1}: Achat de {action[0]} actions, Sonner la cloche: {action[1]}")
+    print(f"Prix des actions: {prices[:len(actions)]}")
+    print(f"Actions cumulées: {np.cumsum([a[0] for a in actions])}")
 
 # initialisation and training of the model
 model = StockNetwork()
-train(model, 1000)
 
 num_episodes = 100
-avg_total_spent, avg_total_stocks, avg_A_n, avg_reward_value, avg_final_day = evaluate_policy(model, num_episodes)
+avg_total_spent, avg_total_stocks, avg_A_n, avg_reward_value, avg_final_day, actions_list = evaluate_policy(model, num_episodes)
 
 print(f"Résultats moyens sur {num_episodes} épisodes:")
 print(f"Gain moyen: {avg_reward_value}")
@@ -179,7 +189,11 @@ print(f"Jour de fin moyen: {avg_final_day}")
 print(f"Prix moyen: {avg_A_n}")
 print(f"Nombre d'actions acheté en moyenne: {avg_total_stocks}")
 
+_, actions, _, prices = simulate_episode(model)
+display_optimal_plan(actions, prices)
 
+
+"""
 # pour sauvegarder le modèle
 torch.save(model.state_dict(), 'stock_model.pth')
 
@@ -190,4 +204,4 @@ model.load_state_dict(torch.load('stock_model.pth'))
 model.eval()
 
 train(model, 1000)
-
+"""
