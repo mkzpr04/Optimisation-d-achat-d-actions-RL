@@ -16,14 +16,13 @@ Initialisation :
 LinearPolicy initialise une politique avec des poids aléatoires.
 simulate_episode simule un épisode complet, retournant les états, actions et récompenses pour chaque jour.
 evaluate_policy évalue et met à jour la politique sur plusieurs épisodes, cherchant le meilleur épisode.
-Simulation d'un épisode :
 
+Pour la simulation d'un épisode :
 Chaque jour, le prix de l'action est mis à jour et l'état est normalisé.
 Une action est choisie en fonction de l'état normalisé.
-La cloche est sonnée si les conditions sont remplies.
-L'épisode s'arrête si la cloche est sonnée ou si le nombre maximal d'actions est atteint.
-Évaluation et mise à jour de la politique :
+La cloche est sonnée si les conditions sont remplies et l'épisode s'arrête.
 
+Évaluation et mise à jour de la politique :
 Pour chaque épisode, les états, actions et récompenses sont enregistrés.
 La politique est mise à jour en utilisant le gradient de politique basé sur les retours.
 
@@ -52,9 +51,9 @@ Fonction pour évaluer la politique du modèle sur plusieurs épisodes, en calcu
 Initialisation du modèle, application de l'initialisation des poids, entraînement du modèle et affichage des résultats moyens sur plusieurs épisodes.
 
 
-# Modification
+# Modification effectuée
 
-retourner la moyenne des episodes et non plus le meilleur, ou le dernier épisode ce qui est plus robuste pour évaluer la performance de la politique
+-retourner la moyenne des episodes et non plus le dernier épisode, ni le meilleur ce qui est plus robuste pour évaluer la performance de la politique
 Normalisation changée (min max)
 distribution gaussienne avec torch.distributions.Normal
 
