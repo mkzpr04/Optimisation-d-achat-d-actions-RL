@@ -11,8 +11,6 @@ chaque soir à partir du 20e jour, on peut sonner une cloche uniquement lorsque 
 Nous souhaitons maximiser ceci :100*A_n - (ce que l'on a dépensé)
 
 # 1ère version
-Initialisation :
-
 LinearPolicy initialise une politique avec des poids aléatoires.
 simulate_episode simule un épisode complet, retournant les états, actions et récompenses pour chaque jour.
 evaluate_policy évalue et met à jour la politique sur plusieurs épisodes, cherchant le meilleur épisode.
